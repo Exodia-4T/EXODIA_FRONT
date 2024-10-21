@@ -65,6 +65,19 @@
                     </div>
                 </v-col>
             </v-row>
+
+            <v-row style="justify-content: space-between">
+                <v-col cols="3">
+                    <v-list-subheader>결재라인</v-list-subheader>
+                </v-col>
+                <v-col cols="9">
+                    <div style="border: 1px solid #b9b9b9; border-radius:20px">
+                        <v-col v-for="dto in this.submitLines" :key="dto.id">
+                            {{ dto.userName }}: {{ dto.positionName }} {{ dto.submitStatus }}
+                        </v-col>
+                    </div>
+                </v-col>
+            </v-row>
         </v-col>
 
         <!-- 승인 거절 -->
@@ -92,11 +105,11 @@
 
     <!-- 반려 사유 모달 -->
     <v-dialog v-model="isRejectReasonDialogVisible" max-width="500px">
-        <v-card>
+        <v-card style="padding:30px">
             <v-card-title>
                 <h4>반려 사유 입력</h4>
             </v-card-title>
-            <v-card-text>
+            <v-card-text style="margin-bottom:0">
                 <v-text-field label="반려 사유" v-model="reason" :rules="[v => !!v || '반려 사유를 작성하세요']"
                     required></v-text-field>
             </v-card-text>
@@ -123,17 +136,17 @@ export default {
             approvalStatus: '',
             reason: '',
             submitId: '',
+            submitLines: {},
             isRejectReasonDialogVisible: false,
             isMySubmitReq: true,
         }
     },
-    created() {
+    mounted() {
         this.submitId = this.$route.params.submitId;
         this.isMySubmitReq = this.$route.query.isMySubmitReq
 
-        console.log(this.isMySubmitReq);
         this.fetchSubmitDetail(this.submitId);
-
+        this.fetchSubmitLines(this.submitId);
     },
 
     methods: {
@@ -149,7 +162,16 @@ export default {
 
                 console.log(this.selectedSubmit.contents);
             } catch (e) {
-                console.error('문서 상세 정보를 가져오는 중 오류 발생:', e);
+                console.error('결재 상세 정보를 가져오는 중 오류 발생:', e);
+            }
+        },
+        async fetchSubmitLines(submitId) {
+            try {
+                const url = `${process.env.VUE_APP_API_BASE_URL}/submit/list/submitLine/${submitId}`;
+                const response = await axios.get(url, { headers: { Authorization: `Bearer ${this.token}` } });
+                this.submitLines = response.data.result;
+            } catch (e) {
+                console.error('결재 라인 정보를 가져오는 중 오류 발생:', e);
             }
         },
         async submitDecision() {
@@ -193,13 +215,14 @@ export default {
                 this.isRejectReasonDialogVisible = false;
             }
         },
-        async deleteSubmit(id) {
+        async deleteSubmit(submitId) {
             try {
-                const url = `${process.env.VUE_APP_API_BASE_URL}/submit/delete/${id}`;
+                const url = `${process.env.VUE_APP_API_BASE_URL}/submit/delete/${submitId}`;
                 await axios.get(url, { headers: { Authorization: `Bearer ${this.token}` } });
-
+                alert('결재를 성공적으로 취소하였습니다.');
+                this.$router.push("/submit/list/my")
             } catch (e) {
-                console.error('결재 요청 정보를 가져오는 중 오류 발생:', e);
+                console.error('결재 취소 중 오류 발생:', e);
             }
         }
     }
